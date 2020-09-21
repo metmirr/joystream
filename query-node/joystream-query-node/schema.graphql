@@ -3,7 +3,7 @@ type Member @entity {
 	memberId: BigInt!
 
 	"The unique handle chosen by member"
-	handle: String @fulltext(query: "handles")
+	handle: String @unique @fulltext(query: "handles")
 
 	"A Url to member's Avatar image"
 	avatarUri: String
@@ -400,3 +400,67 @@ type UserDefinedLicense @variant {
 
 union License = UserDefinedLicense | CreativeCommonsLicense
 
+type VideoMedia @entity {
+	"Underlying entity"
+	entity: Entity!
+
+	encoding: VideoMediaEncoding!
+
+	"Resolution width"
+	pixelWidth: Int!
+
+	"Resolution height"
+	pixelHeight: Int!
+
+	"Size in bytes"
+	size: BigInt!
+
+	"Where to find"
+	location: MediaLocation!
+}
+
+type Block @entity {
+	blockHeight: BigInt!
+
+	timeStamp: BigInt!
+}
+
+type Video @entity {
+	"Underlying entity"
+	entity: Entity!
+
+	channel: Channel!
+
+	category: Category!
+
+	title: String!
+
+	description: String!
+
+	# In seconds
+	duration: Int!
+
+	"In intro"
+	skippableIntroDuration: Int
+
+	thumbnailURL: String!
+
+	Language: Language
+
+	media: VideoMedia!
+
+	hasMarketing: Boolean
+
+	atBlock: Block!
+
+	"Possible time when video was published before Joystream"
+	publishedBeforeJoystream: DateTime
+
+	isPublic: Boolean!
+
+	isCurated: Boolean!
+
+	isExplicit: Boolean!
+
+	license: License!
+}
