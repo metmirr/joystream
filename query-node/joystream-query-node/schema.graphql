@@ -320,3 +320,46 @@ type Actor @entity {
 
 	actorInfo: ActorInfo
 }
+
+#######High Level Derivative Entities#######
+
+enum Language {
+	CHINESE
+	ENGLISH
+	ARABIC
+	PORTUGESE
+	FRENCH
+}
+
+type Channel @entity {
+	"Underlying entity"
+	entity: Entity!
+
+	owner: Member!
+
+	handle: String! @unique @fulltext(query: "handles")
+
+	description: String!
+
+	coverPhotoURL: String!
+
+	avatarPhotoURL: String!
+
+	isPublic: Boolean!
+
+	isCurated: Boolean!
+
+	language: Language
+
+	videos: [Video!]
+}
+
+type Category @entity {
+	"Underlying entity"
+	entity: Entity!
+
+	name: String! @unique @fulltext(query: "names")
+
+	videos: [Video!]
+}
+
