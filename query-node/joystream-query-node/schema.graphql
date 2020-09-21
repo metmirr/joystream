@@ -363,3 +363,40 @@ type Category @entity {
 	videos: [Video!]
 }
 
+type JoystreamMediaLocation @variant {
+	dataObjectID: BigInt!
+}
+
+type HTTPMediaLocation @variant {
+	host: String!
+	port: Int
+}
+
+union MediaLocation = JoystreamMediaLocation | HTTPMediaLocation
+
+"Encoding and containers"
+enum VideoMediaEncoding {
+	H264_MPEG4
+	VP8_WEBM
+	THEROA_VORBIS
+}
+
+enum CreativeCommonsVersion {
+	CC_BY
+	CC_BY_SA
+	CC_BY_ND
+	CC_BY_NC
+	CC_BY_NC_SA
+	CC_BY_NC_ND
+}
+
+type CreativeCommonsLicense @variant {
+	version: CreativeCommonsVersion!
+}
+
+type UserDefinedLicense @variant {
+	text: String!
+}
+
+union License = UserDefinedLicense | CreativeCommonsLicense
+
