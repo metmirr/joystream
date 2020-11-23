@@ -112,5 +112,5 @@ export const videoPropertyNamesWithId: IPropertyWithId = {
   11: { name: 'isPublic', type: 'boolean', required: true },
   12: { name: 'isExplicit', type: 'boolean', required: true },
   13: { name: 'license', type: 'number', required: true },
-  14: { name: 'isCurated', type: 'boolean', required: true },
+  14: { name: 'isCurated', type: 'boolean', required: false },
 }

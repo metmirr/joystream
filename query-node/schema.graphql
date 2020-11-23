@@ -99,7 +99,7 @@ type Channel @entity {
   isPublic: Boolean!
 
   "Flag signaling whether a channel is curated/verified."
-  isCurated: Boolean!
+  isCurated: Boolean
 
   "The primary langauge of the channel's content"
   language: Language
@@ -285,7 +285,7 @@ type Video @entity {
   isPublic: Boolean!
 
   "Video curation status set by the Curator"
-  isCurated: Boolean!
+  isCurated: Boolean
 
   "Whether the Video contains explicit material."
   isExplicit: Boolean!
