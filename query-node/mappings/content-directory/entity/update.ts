@@ -1,3 +1,5 @@
+import Debug from 'debug'
+
 import { DB } from '../../../generated/indexer'
 import { Channel } from '../../../generated/graphql-server/src/modules/channel/channel.model'
 import { Category } from '../../../generated/graphql-server/src/modules/category/category.model'
@@ -37,10 +39,17 @@ import {
   UserDefinedLicense,
 } from '../../../generated/graphql-server/src/modules/variants/variants.model'
 
+const debug = Debug(`mappings:update-entity`)
+
 function getEntityIdFromReferencedField(ref: IReference, entityIdBeforeTransaction: number): string {
   const { entityId, existing } = ref
   const id = existing ? entityId : entityIdBeforeTransaction + entityId
   return id.toString()
+}
+
+//
+function logEntityNotFound(className: string, where: IWhereCond) {
+  debug(`${className}(${where.where.id}) not found. This happen when we ignore operations because of missing data.`)
 }
 
 async function updateMediaLocationEntityPropertyValues(
@@ -51,7 +60,7 @@ async function updateMediaLocationEntityPropertyValues(
 ): Promise<void> {
   const { httpMediaLocation, joystreamMediaLocation } = props
   const record = await db.get(MediaLocationEntity, where)
-  if (record === undefined) throw Error(`MediaLocation entity not found: ${where.where.id}`)
+  if (!record) return logEntityNotFound(`MediaLocation`, where)
 
   if (httpMediaLocation) {
     const id = getEntityIdFromReferencedField(httpMediaLocation, entityIdBeforeTransaction)
@@ -71,7 +80,7 @@ async function updateLicenseEntityPropertyValues(
   entityIdBeforeTransaction: number
 ): Promise<void> {
   const record = await db.get(LicenseEntity, where)
-  if (record === undefined) throw Error(`License entity not found: ${where.where.id}`)
+  if (!record) return logEntityNotFound(`License`, where)
 
   const { knownLicense, userDefinedLicense } = props
   if (knownLicense) {
@@ -104,7 +113,8 @@ async function updateLicenseEntityPropertyValues(
 
 async function updateCategoryEntityPropertyValues(db: DB, where: IWhereCond, props: ICategory): Promise<void> {
   const record = await db.get(Category, where)
-  if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
+  if (!record) return logEntityNotFound(`Category`, where)
+
   Object.assign(record, props)
   await db.save<Category>(record)
 }
@@ -116,7 +126,7 @@ async function updateChannelEntityPropertyValues(
   entityIdBeforeTransaction: number
 ): Promise<void> {
   const record = await db.get(Channel, where)
-  if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
+  if (!record) return logEntityNotFound(`Channel`, where)
 
   let lang: Language | undefined = record.language
   if (props.language) {
@@ -138,7 +148,7 @@ async function updateVideoMediaEntityPropertyValues(
   entityIdBeforeTransaction: number
 ): Promise<void> {
   const record = await db.get(VideoMedia, where)
-  if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
+  if (!record) return logEntityNotFound(`VideoMedia`, where)
 
   let enco: VideoMediaEncoding | undefined
   let mediaLoc: HttpMediaLocation | JoystreamMediaLocation = record.location
@@ -181,7 +191,7 @@ async function updateVideoEntityPropertyValues(
   entityIdBeforeTransaction: number
 ): Promise<void> {
   const record = await db.get<Video>(Video, where)
-  if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
+  if (!record) return logEntityNotFound(`Video`, where)
 
   let chann: Channel | undefined
   let cat: Category | undefined
@@ -237,14 +247,15 @@ async function updateUserDefinedLicenseEntityPropertyValues(
   props: IUserDefinedLicense
 ): Promise<void> {
   const record = await db.get(UserDefinedLicenseEntity, where)
-  if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
+  if (!record) return logEntityNotFound(`UserDefinedLicenseEntity`, where)
+
   Object.assign(record, props)
   await db.save<UserDefinedLicenseEntity>(record)
 }
 
 async function updateKnownLicenseEntityPropertyValues(db: DB, where: IWhereCond, props: IKnownLicense): Promise<void> {
   const record = await db.get(KnownLicenseEntity, where)
-  if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
+  if (!record) return logEntityNotFound(`KnownLicenseEntity`, where)
   Object.assign(record, props)
   await db.save<KnownLicenseEntity>(record)
 }
@@ -255,7 +266,7 @@ async function updateHttpMediaLocationEntityPropertyValues(
   props: IHttpMediaLocation
 ): Promise<void> {
   const record = await db.get(HttpMediaLocationEntity, where)
-  if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
+  if (!record) return logEntityNotFound(`HttpMediaLocationEntity`, where)
   Object.assign(record, props)
   await db.save<HttpMediaLocationEntity>(record)
 }
@@ -266,14 +277,14 @@ async function updateJoystreamMediaLocationEntityPropertyValues(
   props: IJoystreamMediaLocation
 ): Promise<void> {
   const record = await db.get(JoystreamMediaLocationEntity, where)
-  if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
+  if (!record) return logEntityNotFound(`JoystreamMediaLocationEntity`, where)
   Object.assign(record, props)
   await db.save<JoystreamMediaLocationEntity>(record)
 }
 
 async function updateLanguageEntityPropertyValues(db: DB, where: IWhereCond, props: ILanguage): Promise<void> {
   const record = await db.get(Language, where)
-  if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
+  if (!record) return logEntityNotFound(`Language`, where)
   Object.assign(record, props)
   await db.save<Language>(record)
 }
@@ -284,7 +295,7 @@ async function updateVideoMediaEncodingEntityPropertyValues(
   props: IVideoMediaEncoding
 ): Promise<void> {
   const record = await db.get(VideoMediaEncoding, where)
-  if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
+  if (!record) return logEntityNotFound(`VideoMediaEncoding`, where)
   Object.assign(record, props)
   await db.save<VideoMediaEncoding>(record)
 }
@@ -296,8 +307,7 @@ async function updateFeaturedVideoEntityPropertyValues(
   entityIdBeforeTransaction: number
 ): Promise<void> {
   const record = await db.get(FeaturedVideo, { ...where, relations: ['video'] })
-  if (record === undefined) throw Error(`FeaturedVideo entity not found: ${where.where.id}`)
-
+  if (!record) return logEntityNotFound(`FeaturedVideo`, where)
   if (props.video) {
     const id = getEntityIdFromReferencedField(props.video, entityIdBeforeTransaction)
     const video = await db.get(Video, { where: { id } })

@@ -46,6 +46,8 @@ import {
   createVideoMediaEncoding,
   createBlockOrGetFromDatabase,
   createFeaturedVideo,
+  createMediaLocation,
+  createLicense,
 } from './create'
 import {
   categoryPropertyNamesWithId,
@@ -59,6 +61,8 @@ import {
   videoPropertyNamesWithId,
   ContentDirectoryKnownClasses,
   featuredVideoPropertyNamesWithId,
+  mediaLocationPropertyNamesWithId,
+  licensePropertyNamesWithId,
 } from '../content-dir-consts'
 
 import {
@@ -81,6 +85,8 @@ import {
 } from '../../types'
 import { getOrCreate, getKnownClass } from '../get-or-create'
 
+import { shouldIgnore } from './ignoreOperation'
+
 const debug = Debug('mappings:content-directory')
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -97,14 +103,12 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
   const arg: IDBBlockId = { db, block, id: entityId }
 
   switch (knownClass.name) {
-    case ContentDirectoryKnownClasses.CHANNEL:
-      await createChannel(
-        arg,
-        new Map<string, IEntity[]>(),
-        decode.setProperties<IChannel>(event, channelPropertyNamesWithId),
-        0 // ignored
-      )
+    case ContentDirectoryKnownClasses.CHANNEL: {
+      const props = decode.setProperties<IChannel>(event, channelPropertyNamesWithId)
+      if (shouldIgnore.channel(props, db)) return
+      await createChannel(arg, new Map<string, IEntity[]>(), props, 0)
       break
+    }
 
     case ContentDirectoryKnownClasses.CATEGORY:
       await createCategory(arg, decode.setProperties<ICategory>(event, categoryPropertyNamesWithId))
@@ -135,23 +139,19 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
       )
       break
 
-    case ContentDirectoryKnownClasses.VIDEOMEDIA:
-      await createVideoMedia(
-        arg,
-        new Map<string, IEntity[]>(),
-        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId),
-        0 // ignored
-      )
+    case ContentDirectoryKnownClasses.VIDEOMEDIA: {
+      const props = decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId)
+      if (shouldIgnore.videoMedia(props, db)) return
+      await createVideoMedia(arg, new Map<string, IEntity[]>(), props, 0)
       break
+    }
 
-    case ContentDirectoryKnownClasses.VIDEO:
-      await createVideo(
-        arg,
-        new Map<string, IEntity[]>(),
-        decode.setProperties<IVideo>(event, videoPropertyNamesWithId),
-        0 // ignored
-      )
+    case ContentDirectoryKnownClasses.VIDEO: {
+      const props = decode.setProperties<IVideo>(event, videoPropertyNamesWithId)
+      if (shouldIgnore.video(props, db)) return
+      await createVideo(arg, new Map<string, IEntity[]>(), props, 0)
       break
+    }
 
     case ContentDirectoryKnownClasses.LANGUAGE:
       await createLanguage(arg, decode.setProperties<ILanguage>(event, languagePropertyNamesWIthId))
@@ -163,14 +163,27 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
         decode.setProperties<IVideoMediaEncoding>(event, videoMediaEncodingPropertyNamesWithId)
       )
       break
-    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
-      await createFeaturedVideo(
-        arg,
-        new Map<string, IEntity[]>(),
-        decode.setProperties<IFeaturedVideo>(event, featuredVideoPropertyNamesWithId),
-        0
-      )
+
+    case ContentDirectoryKnownClasses.FEATUREDVIDEOS: {
+      const props = decode.setProperties<IFeaturedVideo>(event, featuredVideoPropertyNamesWithId)
+      if (shouldIgnore.featuredVideo(props, db)) return
+      await createFeaturedVideo(arg, new Map<string, IEntity[]>(), props, 0)
       break
+    }
+
+    case ContentDirectoryKnownClasses.MEDIALOCATION: {
+      const props = decode.setProperties<IMediaLocation>(event, mediaLocationPropertyNamesWithId)
+      if (shouldIgnore.mediaLocation(props, db)) return
+      await createMediaLocation(arg, new Map<string, IEntity[]>(), props, 0)
+      break
+    }
+
+    case ContentDirectoryKnownClasses.LICENSE: {
+      const props = decode.setProperties<ILicense>(event, licensePropertyNamesWithId)
+      if (shouldIgnore.license(props, db)) return
+      await createLicense(arg, new Map<string, IEntity[]>(), props, 0)
+      break
+    }
 
     default:
       throw new Error(`Unknown class name: ${knownClass.name}`)
@@ -283,9 +296,12 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
   extrinsic.args.push(newPropertyValues)
 
   switch (knownClass.name) {
-    case ContentDirectoryKnownClasses.CHANNEL:
-      updateChannelEntityPropertyValues(db, where, decode.setProperties<IChannel>(event, channelPropertyNamesWithId), 0)
+    case ContentDirectoryKnownClasses.CHANNEL: {
+      const props = decode.setProperties<IChannel>(event, channelPropertyNamesWithId)
+      if (shouldIgnore.channel(props, db)) return
+      updateChannelEntityPropertyValues(db, where, props, 0)
       break
+    }
 
     case ContentDirectoryKnownClasses.CATEGORY:
       await updateCategoryEntityPropertyValues(
@@ -327,18 +343,19 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
       )
       break
 
-    case ContentDirectoryKnownClasses.VIDEOMEDIA:
-      await updateVideoMediaEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId),
-        0
-      )
+    case ContentDirectoryKnownClasses.VIDEOMEDIA: {
+      const props = decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId)
+      if (shouldIgnore.videoMedia(props, db)) return
+      await updateVideoMediaEntityPropertyValues(db, where, props, 0)
       break
+    }
 
-    case ContentDirectoryKnownClasses.VIDEO:
-      await updateVideoEntityPropertyValues(db, where, decode.setProperties<IVideo>(event, videoPropertyNamesWithId), 0)
+    case ContentDirectoryKnownClasses.VIDEO: {
+      const props = decode.setProperties<IVideo>(event, videoPropertyNamesWithId)
+      if (shouldIgnore.video(props, db)) return
+      await updateVideoEntityPropertyValues(db, where, props, 0)
       break
+    }
 
     case ContentDirectoryKnownClasses.LANGUAGE:
       await updateLanguageEntityPropertyValues(
@@ -356,32 +373,26 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
       )
       break
 
-    case ContentDirectoryKnownClasses.LICENSE:
-      await updateLicenseEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<ILicense>(event, videoMediaEncodingPropertyNamesWithId),
-        0
-      )
+    case ContentDirectoryKnownClasses.LICENSE: {
+      const props = decode.setProperties<ILicense>(event, videoMediaEncodingPropertyNamesWithId)
+      if (shouldIgnore.license(props, db)) return
+      await updateLicenseEntityPropertyValues(db, where, props, 0)
       break
+    }
 
-    case ContentDirectoryKnownClasses.MEDIALOCATION:
-      await updateMediaLocationEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IMediaLocation>(event, videoMediaEncodingPropertyNamesWithId),
-        0
-      )
+    case ContentDirectoryKnownClasses.MEDIALOCATION: {
+      const props = decode.setProperties<IMediaLocation>(event, videoMediaEncodingPropertyNamesWithId)
+      if (shouldIgnore.mediaLocation(props, db)) return
+      await updateMediaLocationEntityPropertyValues(db, where, props, 0)
       break
+    }
 
-    case ContentDirectoryKnownClasses.FEATUREDVIDEOS:
-      await updateFeaturedVideoEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IFeaturedVideo>(event, featuredVideoPropertyNamesWithId),
-        0
-      )
+    case ContentDirectoryKnownClasses.FEATUREDVIDEOS: {
+      const props = decode.setProperties<IFeaturedVideo>(event, featuredVideoPropertyNamesWithId)
+      if (shouldIgnore.featuredVideo(props, db)) return
+      await updateFeaturedVideoEntityPropertyValues(db, where, props, 0)
       break
+    }
 
     default:
       throw new Error(`Unknown class name: ${knownClass.name}`)

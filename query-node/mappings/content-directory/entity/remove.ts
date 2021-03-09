@@ -55,7 +55,7 @@ async function removeVideo(db: DB, where: IWhereCond): Promise<void> {
 }
 
 async function removeLicense(db: DB, where: IWhereCond): Promise<void> {
-  const record = await db.get(LicenseEntity, where)
+  const record = await db.get(LicenseEntity, { ...where, relations: ['videolicense'] })
   if (!record) return logEntityNotFound(`License`, where)
   if (record.videolicense && record.videolicense.length) assertKeyViolation(`License`, record.id)
   await db.remove<LicenseEntity>(record)

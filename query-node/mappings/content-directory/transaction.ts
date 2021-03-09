@@ -76,8 +76,11 @@ import {
   createFeaturedVideo,
 } from './entity/create'
 import { getOrCreate } from './get-or-create'
+import { shouldIgnore } from './entity/ignoreOperation'
 
 const debug = Debug('mappings:cd:transaction')
+
+const NO_ENTITY_SUPPORT_ERROR_MESSAGE = `There are entity references to entities that don't have schema. Ignoring all the operations`
 
 async function getNextEntityId(db: DB): Promise<number> {
   const e = await db.get(NextEntityId, { where: { id: '1' } })
@@ -114,6 +117,28 @@ async function applyOperations(operations: IBatchOperation, db: DB, event: Subst
   // We need this to know which entity belongs to which class(we will need to know to update/create
   // Channel, Video etc.). For example if there is a property update operation there is no class id
   await batchCreateClassEntities(db, event.blockNumber, createEntityOperations)
+
+  // ////////////////////////////////
+  // Should ignore operation? If referenced entities don't have schema support then we ignore whole operations
+
+  console.log(`///////////////BEGIN///////////////////`)
+  let ignoreOperations = await shouldIgnore.transaction(db, createEntityOperations, addSchemaSupportToEntityOperations)
+  if (ignoreOperations) {
+    debug(NO_ENTITY_SUPPORT_ERROR_MESSAGE)
+    return
+  }
+  console.log(`IGNORE: `, ignoreOperations)
+
+  ignoreOperations = await shouldIgnore.transaction(db, createEntityOperations, updatePropertyValuesOperations)
+  if (ignoreOperations) {
+    debug(NO_ENTITY_SUPPORT_ERROR_MESSAGE)
+    return
+  }
+  console.log(`IGNORE: `, ignoreOperations)
+
+  console.log(`///////////////END///////////////////`)
+  // ////////////////////////////////
+
   await batchAddSchemaSupportToEntity(db, createEntityOperations, addSchemaSupportToEntityOperations, event.blockNumber)
   await batchUpdatePropertyValue(db, createEntityOperations, updatePropertyValuesOperations)
 }

@@ -413,7 +413,7 @@ async function video(
   const v = await db.get(Video, { where: { id } })
   if (v) return v
 
-  const { properties } = findEntity(entityId, 'MediaVideo', classEntityMap)
+  const { properties } = findEntity(entityId, 'Video', classEntityMap)
   return await createVideo(
     { db, block, id },
     classEntityMap,
